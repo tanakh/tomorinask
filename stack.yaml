@@ -1,0 +1,50 @@
+# For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
+
+# Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
+resolver: ghcjs-0.2.0_ghc-7.10.2
+
+# Local packages, usually specified by relative directory name
+packages:
+  - '.'
+  - https://hackage.haskell.org/package/ghcjs-dom-0.2.3.0/ghcjs-dom-0.2.3.0.tar.gz
+
+# Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
+extra-deps:
+  - split-0.2.2
+  - regex-tdfa-1.2.1
+  - parsec-3.1.9
+  - regex-base-0.93.2
+  - xmlhtml-0.2.3.4
+  - blaze-builder-0.4.0.1
+  - blaze-html-0.8.1.1
+  - blaze-markup-0.7.0.3
+  - shakespeare-2.0.7
+  - exceptions-0.8.0.2
+  - transformers-compat-0.4.0.4
+
+# Override default flag values for local packages and extra-deps
+flags: {}
+
+# Extra package databases containing global packages
+extra-package-dbs: []
+
+# Control whether we use the GHC we find on the path
+# system-ghc: true
+
+# Require a specific version of stack, using version ranges
+# require-stack-version: -any # Default
+# require-stack-version: >= 0.1.10.0
+
+# Override the architecture used by stack, especially useful on Windows
+# arch: i386
+# arch: x86_64
+
+# Extra directories used by stack for building
+# extra-include-dirs: [/path/to/dir]
+# extra-lib-dirs: [/path/to/dir]
+
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.0.20151029_ghc-7.10.2:
+        url: "https://github.com/nrolland/ghcjs/releases/download/v0.2.0.20151029/ghcjs-0.2.0.20151029.tar.gz"

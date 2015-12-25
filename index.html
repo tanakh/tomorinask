@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html style="height:100%;" lang="ja-JP">
+  <head>
+    <meta charset="UTF-8">
+    <script language="javascript" src="jquery-2.1.4.min.js"></script>
+    <script language="javascript" src="js/rts.js"></script>
+    <script language="javascript" src="js/lib.js"></script>
+    <script language="javascript" src="js/out.js"></script>
+    <link rel="stylesheet" href="dist/css/fabric.components.min.css">
+    <link rel="stylesheet" href="dist/css/fabric.min.css">
+    <title>Ask</title>
+  </head>
+  <body style="height:100%;overflow:hidden;margin:0px;">
+
+    <div class="ms-NavBar">
+      <div class="ms-NavBar-openMenu js-openMenu"></div>
+      <div class="ms-Overlay"></div>
+      <ul class="ms-NavBar-items">
+        <li class="ms-NavBar-item ms-NavBar-item--hasMenu">
+          <a class="ms-NavBar-link ms-font-l" href="#">友利奈緒</a>
+          <i class="ms-NavBar-chevronDown ms-Icon ms-Icon--chevronDown"></i>
+          <ul class="ms-ContextualMenu">
+            <li class="ms-ContextualMenu-item">
+              <a class="ms-ContextualMenu-link ms-font-l" href="#">友利奈緒</a>
+            </li>
+          </ul>
+        </li>
+        <li class="ms-NavBar-item ms-NavBar-item--right">
+          <a class="ms-NavBar-link" href="#">
+            <i class="ms-Icon ms-Icon--gear"></i>
+            Setting
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="ms-Dialog" id="login-dialog">
+      <div class="ms-Overlay"></div>
+      <div class="ms-Dialog-main">
+        <button class="ms-Dialog-button ms-Dialog-button--close">
+          <i class="ms-Icon ms-Icon--x"></i>
+        </button>
+        <div class="ms-Dialog-header">
+          <p class="ms-Dialog-title">
+            Tomori Nao is asking you...
+          </p>
+        </div>
+        <div class="ms-Dialog-inner">
+          <div class="ms-Dialog-content">
+            <img src="tomorinao.png" width="100%">
+            <div class="ms-TextField ms-TextField--underlined">
+              <label class="ms-Label">User:</label>
+              <input class="ms-TextField-field" id="user" type="text">
+            </div>
+            <div class="ms-TextField ms-TextField--underlined">
+              <label class="ms-Label">Pass:</label>
+              <input class="ms-TextField-field" id="pass" type="password">
+            </div>
+          </div>
+          <div class="ms-Dialog-actions">
+            <div class="ms-Dialog-actionsRight">
+              <button class="ms-Dialog-action ms-Button ms-Button--primary" id="login-btn">
+                <span class="ms-Button-label">Login</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:calc(100% - 160px);overflow-y:auto;overflow-x:hidden;" id="asks">
+    </div>
+
+    <div align="right" style="position:absolute;bottom:0px;height:100px;width:96%;padding:10px;">
+      <div class="ms-TextField ms-TextField--multiline">
+        <textarea class="ms-TextField-field" id="answer-text"></textarea>
+      </div>
+      <button class="ms-Button ms-Button" id="skip-btn" style="align:right;">
+        <span class="ms-Button-label">Skip</span>
+      </button>
+      <button class="ms-Button ms-Button--primary" id="answer-btn" style="align:right;">
+        <span class="ms-Button-label">Answer</span>
+      </button>
+    </div>
+
+  </body>
+  <script language="javascript" src="dist/js/jquery.fabric.min.js"></script>
+  <script language="javascript" src="js/runmain.js"></script>
+</html>
