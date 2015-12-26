@@ -15,6 +15,7 @@ import Text.Parsec
 import Text.Parsec.String
 
 import Data.Char
+import Data.List
 import Data.JSString (pack)
 import Data.Maybe
 import qualified Data.ByteString as S
@@ -102,6 +103,30 @@ login user pass = do
               ]
     return $ parseResponse s
 
+data Profile = Profile
+    { profileUserName :: String
+    , profileAvaterURL :: String
+    }
+    deriving Show
+
+getProfile :: IO Profile
+getProfile = do
+    s <- httpGet "https://ask.fm/account/wall"
+    userName <- case s =~ "<a class=\"tabBarTab icon-tab-profile\" href=\"/([^\"]+)\">" of
+        [[_, userName]] -> return userName
+        _ -> P.error "cannot get username"
+
+    t <- httpGet $ "https://ask.fm/" ++ userName
+
+    avaterUrl <- case (unwords $ lines t) =~ "<div id=\"profileHeader\">.*data-url=\"([^\"]+)\".*id=\"profilePicture\"" of
+        [[_, avaterUrl]] ->
+            if "//" `isPrefixOf` avaterUrl
+            then return $ "https://" ++ avaterUrl
+            else return avaterUrl
+        _ -> P.error "cannot get avater"
+
+    return $ Profile userName avaterUrl
+
 data Ask = Ask
     { askQuestion :: String
     , askData :: String
@@ -113,7 +138,6 @@ getAsks :: IO [Ask]
 getAsks = go "/account/inbox"
   where
     go url = do
-        -- P.print url
         s <- httpGet $ "https://ask.fm" ++ url
 
         asks <- case parse (many parseAsk) "" s of
@@ -228,8 +252,8 @@ appendAsk doc ask = do
     setScrollTop asksContainer height
     return ()
 
-appendAns :: Document -> String -> IO ()
-appendAns doc ans = do
+appendAns :: Document -> String -> Profile -> IO ()
+appendAns doc ans prof = do
     Just asksContainer <- getElementById doc "asks"
     Just item <- createElement doc $ Just "div"
 
@@ -238,10 +262,10 @@ appendAns doc ans = do
         <tr>
           <td></td>
           <td width="65%">
-            <div align="right" class="ms-font-m">tanakh184</div>
+            <div align="right" class="ms-font-m">#{profileUserName prof}</div>
           </td>
           <td rowspan="2" width="64px" style="vertical-align:top;">
-            <img src="me.png" width="100%">
+            <img src="#{profileAvaterURL prof}" width="100%">
           </td>
         </tr>
         <tr>
@@ -324,6 +348,9 @@ askMain = runWebGUI $ \webView -> do
     Just doc <- webViewGetDomDocument webView
 
     waitForLogin doc
+    prof <- getProfile
+
+    -- P.print prof
 
     snsConn <- newMVar []
 
@@ -361,7 +388,7 @@ askMain = runWebGUI $ \webView -> do
                 case mbans of
                     Nothing -> do
                         -- putStrLn $ "skip: " ++ askURL ask
-                        appendAns doc "今は答える気分ではない。"
+                        appendAns doc "今は答える気分ではない。" prof
                     Just ans -> do
                         sns <- readMVar snsConn
                         res <- putAns ask ans sns
@@ -370,9 +397,7 @@ askMain = runWebGUI $ \webView -> do
                                 -- putStrLn $ "Send answer error: " ++ err
                                 go
                             Right () ->
-                                appendAns doc ans
+                                appendAns doc ans prof
 
         go
         threadDelay (10^6)
-
-    forever $ threadDelay (10^6)
