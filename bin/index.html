@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html style="height:100%;" lang="ja-JP">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="dist/css/fabric.components.min.css">
+    <link rel="stylesheet" href="dist/css/fabric.min.css">
+    <script src="js/rts.js"></script>
+    <script src="js/lib.js"></script>
+    <script src="js/out.js"></script>
+    <script>
+      <!-- Electron Issue -->
+      window.jQuery = window.$ = require('./jquery-2.1.4.min');
+      $(document).ready(function() {
+        if ($.fn.Spinner) {
+          $('.ms-Spinner').Spinner();
+        }
+        // Vanilla JS Components
+        if (typeof fabric !== "") {
+          if ('Spinner' in fabric) {
+            var element = document.querySelector('.ms-Spinner');
+            var component = new fabric['Spinner'](element);
+          }
+        }
+      });
+    </script>
+    <title>Tomorinask</title>
+  </head>
+  <body style="height:100%;overflow:hidden;margin:0px;">
+
+    <div class="ms-NavBar">
+      <div class="ms-NavBar-openMenu js-openMenu"></div>
+      <div class="ms-Overlay"></div>
+      <ul class="ms-NavBar-items">
+        <li class="ms-NavBar-item ms-NavBar-item--hasMenu">
+          <a class="ms-NavBar-link ms-font-l" href="#"><div id="ask-count">友利奈緒</div></a>
+          
+          <ul class="ms-ContextualMenu">
+            <li class="ms-ContextualMenu-item">
+              <a class="ms-ContextualMenu-link ms-font-l" href="#">友利奈緒</a>
+            </li>
+          </ul>
+        </li>
+        <li class="ms-NavBar-item ms-NavBar-item--right">
+          <a class="ms-NavBar-link" href="#" id="setting-button"
+             onClick="$('#setting-dialog').css('visibility', 'visible');">
+            <i class="ms-Icon ms-Icon--gear"></i>
+            Setting
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="ms-Dialog" id="login-dialog">
+      <div class="ms-Overlay"></div>
+      <div class="ms-Dialog-main">
+        <button class="ms-Dialog-button ms-Dialog-button--close">
+          <i class="ms-Icon ms-Icon--x"></i>
+        </button>
+        <div class="ms-Dialog-header">
+          <p class="ms-Dialog-title">
+            Tomori Nao is asking you...
+          </p>
+        </div>
+        <div class="ms-Dialog-inner">
+          <div class="ms-Dialog-content">
+
+            <div class="ms-Spinner" style="opacity:0;position:absolute;top:0;left:0;right:0;bottom:0;margin:auto;" id="login-spinner"></div>
+
+            <img src="tomorinao.png" width="100%">
+            <p class="ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l" style="position:relative;visibility:hidden;" id="login-error">
+            </p>
+
+            <div class="ms-TextField ms-TextField--underlined">
+              <label class="ms-Label">User:</label>
+              <input class="ms-TextField-field" id="user" type="text">
+            </div>
+            <div class="ms-TextField ms-TextField--underlined">
+              <label class="ms-Label">Pass:</label>
+              <input class="ms-TextField-field" id="pass" type="password">
+            </div>
+          </div>
+          <div class="ms-Dialog-actions">
+            <div class="ms-Dialog-actionsRight">
+              <button class="ms-Dialog-action ms-Button ms-Button--primary" id="login-btn">
+                <span class="ms-Button-label">Login</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="setting-dialog" class="ms-Dialog ms-Dialog--close" style="visibility:hidden;">
+      <div class="ms-Overlay"></div>
+      <div class="ms-Dialog-main">
+        <button class="ms-Dialog-button ms-Dialog-button--close"
+                onClick="$('#setting-dialog').css('visibility', 'hidden');">
+          <i class="ms-Icon ms-Icon--x"></i>
+        </button>
+        <div class="ms-Dialog-header">
+          <p class="ms-Dialog-title">
+            SNS Sharing
+          </p>
+        </div>
+        <div class="ms-Dialog-inner">
+          <div class="ms-Dialog-content">
+            <div class="ms-ChoiceField">
+              <input id="sns-facebook" class="ms-ChoiceField-input" type="checkbox">
+              <label for="sns-facebook" class="ms-ChoiceField-field">
+                <span class="ms-Label">Facebook</span>
+              </label>
+            </div>
+            <div class="ms-ChoiceField">
+              <input id="sns-twitter" class="ms-ChoiceField-input" type="checkbox" checked="checked">
+              <label for="sns-twitter" class="ms-ChoiceField-field">
+                <span class="ms-Label">Twitter</span>
+              </label>
+            </div>
+            <div class="ms-ChoiceField">
+              <input id="sns-vk" class="ms-ChoiceField-input" type="checkbox">
+              <label for="sns-vk" class="ms-ChoiceField-field">
+                <span class="ms-Label">VK</span>
+              </label>
+            </div>
+          </div>
+          <div class="ms-Dialog-actions">
+            <div class="ms-Dialog-actionsRight">
+              <button id="save-setting" class="ms-Dialog-action ms-Button ms-Button--primary">
+                <span class="ms-Button-label">Save</span>
+              </button>
+              <button class="ms-Dialog-action ms-Button"
+                      onClick="$('#setting-dialog').css('visibility', 'hidden');">
+                <span class="ms-Button-label">Cancel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="height:calc(100% - 160px);overflow-y:auto;overflow-x:hidden;" id="asks">
+    </div>
+
+    <div align="right" style="position:absolute;bottom:0px;height:100px;width:96%;padding:10px;">
+      <div class="ms-TextField ms-TextField--multiline">
+        <textarea class="ms-TextField-field" id="answer-text"></textarea>
+      </div>
+      <button class="ms-Button ms-Button" id="skip-btn" style="align:right;">
+        <span class="ms-Button-label">Skip</span>
+      </button>
+      <button class="ms-Button ms-Button--primary" id="answer-btn" style="align:right;">
+        <span class="ms-Button-label">Answer</span>
+      </button>
+    </div>
+
+  </body>
+  <script src="dist/js/jquery.fabric.min.js"></script>
+  <script src="js/runmain.js"></script>
+</html>

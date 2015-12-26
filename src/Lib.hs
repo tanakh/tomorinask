@@ -350,9 +350,7 @@ askMain = runWebGUI $ \webView -> do
     waitForLogin doc
     prof <- getProfile
 
-    -- P.print prof
-
-    snsConn <- newMVar []
+    snsConn <- newMVar ["twitter"]
 
     Just settingDialog <- getElementById doc "setting-dialog"
     Just saveSetting <- getElementById doc "save-setting"
