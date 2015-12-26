@@ -102,8 +102,6 @@ login user pass = do
               ]
     return $ parseResponse s
 
--- {"error":"ユーザー名またはパスワードが不正です"}
-
 data Ask = Ask
     { askQuestion :: String
     , askData :: String
@@ -129,17 +127,19 @@ getAsks = go "/account/inbox"
             _ ->
                 return asks
 
-putAns :: Ask -> String -> IO (Either String ())
-putAns ask ans = do
+putAns :: Ask -> String -> [String] -> IO (Either String ())
+putAns ask ans sns = do
     let url = "https://ask.fm" ++ askURL ask
     token <- getAuthToken url
-    s <- httpPost url
+    s <- httpPost url $
         [ (pack "utf8", "✓")
         , (pack "authenticity_token", token)
         , (pack "question[answer_text]", ans)
         , (pack "question[answer_type]", "")
         , (pack "question[photo_url]", "")
-        , (pack "question[sharing][]", "twitter")
+        ] ++
+        [ (pack "question[sharing][]", name)
+        | name <- sns
         ]
     -- P.print s
     return $ parseResponse s
@@ -324,10 +324,27 @@ askMain = runWebGUI $ \webView -> do
     Just doc <- webViewGetDomDocument webView
 
     waitForLogin doc
-    -- Just loginDialog <- getElementById doc ("login-dialog" :: String)
-    -- Just loginBtn <- getElementById doc ("login-btn" :: String)
-    -- Just style <- getStyle loginDialog
-    -- setProperty style ("visibility" :: String) (Just ("hidden" :: String)) ("" :: String)
+
+    snsConn <- newMVar []
+
+    Just settingDialog <- getElementById doc "setting-dialog"
+    Just saveSetting <- getElementById doc "save-setting"
+    on saveSetting Element.click $ do
+        Just fb <- getElementById doc "sns-facebook"
+        Just tw <- getElementById doc "sns-twitter"
+        Just vk <- getElementById doc "sns-vk"
+        fbChecked <- getChecked $ castToHTMLInputElement fb
+        twChecked <- getChecked $ castToHTMLInputElement tw
+        vkChecked <- getChecked $ castToHTMLInputElement vk
+
+        liftIO $ modifyMVar_ snsConn $ \_ -> do
+            return $
+                [ "facebook" | fbChecked ] ++
+                [ "twitter"  | twChecked ] ++
+                [ "vk"       | vkChecked ]
+
+
+        liftIO $ setStyle settingDialog "visibility" "hidden"
 
     askQ <- newChan
     askCnt <- newMVar 0
@@ -346,7 +363,8 @@ askMain = runWebGUI $ \webView -> do
                         -- putStrLn $ "skip: " ++ askURL ask
                         appendAns doc "今は答える気分ではない。"
                     Just ans -> do
-                        res <- putAns ask ans
+                        sns <- readMVar snsConn
+                        res <- putAns ask ans sns
                         case res of
                             Left err -> do
                                 -- putStrLn $ "Send answer error: " ++ err

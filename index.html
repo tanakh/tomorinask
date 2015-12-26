@@ -42,7 +42,8 @@
           </ul>
         </li>
         <li class="ms-NavBar-item ms-NavBar-item--right">
-          <a class="ms-NavBar-link" href="#">
+          <a class="ms-NavBar-link" href="#" id="setting-button"
+             onClick="$('#setting-dialog').css('visibility', 'visible');">
             <i class="ms-Icon ms-Icon--gear"></i>
             Setting
           </a>
@@ -90,6 +91,54 @@
       </div>
     </div>
 
+    <div class="ms-Dialog ms-Dialog--close" style="visibility:visible;" id="setting-dialog">
+      <div class="ms-Overlay"></div>
+      <div class="ms-Dialog-main">
+        <button class="ms-Dialog-button ms-Dialog-button--close"
+                onClick="$('#setting-dialog').css('visibility', 'hidden');">
+          <i class="ms-Icon ms-Icon--x"></i>
+        </button>
+        <div class="ms-Dialog-header">
+          <p class="ms-Dialog-title">
+            SNS Sharing
+          </p>
+        </div>
+        <div class="ms-Dialog-inner">
+          <div class="ms-Dialog-content">
+            <div class="ms-ChoiceField">
+              <input id="sns-facebook" class="ms-ChoiceField-input" type="checkbox">
+              <label for="sns-facebook" class="ms-ChoiceField-field">
+                <span class="ms-Label">Facebook</span>
+              </label>
+            </div>
+            <div class="ms-ChoiceField">
+              <input id="sns-twitter" class="ms-ChoiceField-input" type="checkbox" checked="checked">
+              <label for="sns-twitter" class="ms-ChoiceField-field">
+                <span class="ms-Label">Twitter</span>
+              </label>
+            </div>
+            <div class="ms-ChoiceField">
+              <input id="sns-vk" class="ms-ChoiceField-input" type="checkbox">
+              <label for="sns-vk" class="ms-ChoiceField-field">
+                <span class="ms-Label">VK</span>
+              </label>
+            </div>
+          </div>
+          <div class="ms-Dialog-actions">
+            <div class="ms-Dialog-actionsRight">
+              <button id="save-setting" class="ms-Dialog-action ms-Button ms-Button--primary">
+                <span class="ms-Button-label">Save</span>
+              </button>
+              <button class="ms-Dialog-action ms-Button"
+                      onClick="$('#setting-dialog').css('visibility', 'hidden');">
+                <span class="ms-Button-label">Cancel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <div style="height:calc(100% - 160px);overflow-y:auto;overflow-x:hidden;" id="asks">
     </div>
 
