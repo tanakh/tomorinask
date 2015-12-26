@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, RecursiveDo #-}
+{-# LANGUAGE QuasiQuotes, RecursiveDo #-}
 
 module Lib
     ( askMain
@@ -92,7 +92,7 @@ getAuthToken :: String -> IO String
 getAuthToken url = do
     s <- httpGet url
 
-    case s =~ ("name=\"authenticity_token\" value=\"([a-zA-Z0-9\\+/=]+)\"" :: String) of
+    case s =~ "name=\"authenticity_token\" value=\"([a-zA-Z0-9\\+/=]+)\"" of
         [[_, token]] -> do
             return token
         _ ->
@@ -100,7 +100,7 @@ getAuthToken url = do
 
 parseResponse :: String -> Either String ()
 parseResponse s =
-    case s =~ ("{\"error\".*:.*\"(.*)\"}" :: String) of
+    case s =~ "{\"error\".*:.*\"(.*)\"}" of
         [[_, err]] -> Left err
         _ -> Right ()
 
@@ -110,9 +110,9 @@ login user pass = do
     -- P.print token
 
     s <- httpPost "https://ask.fm/login"
-              [ ("login", user)
-              , ("password", pass)
-              , ("authenticity_token", token)
+              [ (pack "login", user)
+              , (pack "password", pass)
+              , (pack "authenticity_token", token)
               ]
     return $ parseResponse s
 
@@ -136,7 +136,7 @@ getAsks = go "/account/inbox"
             Left err -> P.error $ show err
             Right asks -> return asks
 
-        case s =~ ("data-url=\"/account/inbox/more\\?page=([0-9]+)&amp;score=([0-9]+)\"" :: String) of
+        case s =~ "data-url=\"/account/inbox/more\\?page=([0-9]+)&amp;score=([0-9]+)\"" of
             [[_, page, score]] -> do
                 more <- go $ "/account/inbox/more?page=" ++ page ++ "&score=" ++ score
                 return $ asks ++ more
@@ -148,12 +148,12 @@ putAns ask ans = do
     let url = "https://ask.fm" ++ askURL ask
     token <- getAuthToken url
     s <- httpPost url
-        [ ("utf8", "✓")
-        , ("authenticity_token", token)
-        , ("question[answer_text]", ans)
-        , ("question[answer_type]", "")
-        , ("question[photo_url]", "")
-        , ("question[sharing][]", "twitter")
+        [ (pack "utf8", "✓")
+        , (pack "authenticity_token", token)
+        , (pack "question[answer_text]", ans)
+        , (pack "question[answer_type]", "")
+        , (pack "question[photo_url]", "")
+        , (pack "question[sharing][]", "twitter")
         ]
     -- P.print s
     return $ parseResponse s
@@ -176,11 +176,11 @@ waitForLogin :: Document -> IO ()
 waitForLogin doc = do
     mvLogin <- newEmptyMVar
 
-    Just userText <- getElementById doc ("user" :: String)
-    Just passText <- getElementById doc ("pass" :: String)
+    Just userText <- getElementById doc "user"
+    Just passText <- getElementById doc "pass"
 
-    Just loginDialog <- getElementById doc ("login-dialog" :: String)
-    Just loginBtn <- getElementById doc ("login-btn" :: String)
+    Just loginDialog <- getElementById doc "login-dialog"
+    Just loginBtn <- getElementById doc "login-btn"
     on loginBtn Element.click $ liftIO $ do
         Just user <- Input.getValue $ castToHTMLInputElement userText
         Just pass <- Input.getValue $ castToHTMLInputElement passText
@@ -190,15 +190,15 @@ waitForLogin doc = do
             Right _ -> do
                 -- putStrLn $ "Login success"
                 Just style <- getStyle loginDialog
-                setProperty style ("visibility" :: String) (Just ("hidden" :: String)) ("" :: String)
+                setProperty style "visibility" (Just "hidden") ""
                 putMVar mvLogin ()
 
     takeMVar mvLogin
 
 appendAsk :: Document -> Ask -> IO ()
 appendAsk doc ask = do
-    Just asksContainer <- getElementById doc ("asks" :: String)
-    Just item <- createElement doc $ Just ("div" :: String)
+    Just asksContainer <- getElementById doc "asks"
+    Just item <- createElement doc $ Just "div"
 
     setInnerHTML item $ Just [st|
       <table width="100%">
@@ -227,8 +227,8 @@ appendAsk doc ask = do
 
 appendAns :: Document -> String -> IO ()
 appendAns doc ans = do
-    Just asksContainer <- getElementById doc ("asks" :: String)
-    Just item <- createElement doc $ Just ("div" :: String)
+    Just asksContainer <- getElementById doc "asks"
+    Just item <- createElement doc $ Just "div"
 
     setInnerHTML item $ Just [st|
       <table width="100%" style="margin:5px;">
@@ -258,13 +258,19 @@ appendAns doc ans = do
 
     return ()
 
+setAskCount :: Document -> MVar Int -> IO ()
+setAskCount doc askCnt = do
+    cnt <- readMVar askCnt
+    Just ansText <- getElementById doc "ask-count"
+    setInnerText (castToHTMLElement ansText) $ Just $ "友利奈緒(" ++ show cnt ++ ")"
+
 waitForAnswer :: Document -> IO (Maybe String)
 waitForAnswer doc = do
     mvAns <- newEmptyMVar
 
-    Just ansText <- getElementById doc ("answer-text" :: String)
-    Just ansBtn  <- getElementById doc ("answer-btn" :: String)
-    Just skipBtn <- getElementById doc ("skip-btn" :: String)
+    Just ansText <- getElementById doc "answer-text"
+    Just ansBtn  <- getElementById doc "answer-btn"
+    Just skipBtn <- getElementById doc "skip-btn"
 
     rec relAsk <- on ansBtn Element.click $ liftIO $ do
             Just ans' <- TextArea.getValue $ castToHTMLTextAreaElement ansText
@@ -276,7 +282,7 @@ waitForAnswer doc = do
             keyEvent <- ask
             kid <- getKeyIdentifier keyEvent
             ctrl <- getCtrlKey keyEvent
-            when (ctrl && kid == ("Enter" :: String)) $ do
+            when (ctrl && kid == "Enter") $ do
                 HTMLElement.click (castToHTMLElement ansBtn)
                 liftIO $ relBtn
 
@@ -285,11 +291,11 @@ waitForAnswer doc = do
             relSkip
 
     ret <- takeMVar mvAns
-    TextArea.setValue (castToHTMLTextAreaElement ansText) (Just ("" :: String))
+    TextArea.setValue (castToHTMLTextAreaElement ansText) (Just "")
     return ret
 
-retrieveAsks :: Chan Ask -> IO ()
-retrieveAsks q = go mempty
+retrieveAsks :: Document -> Chan Ask -> MVar Int -> IO ()
+retrieveAsks doc q cnt = go mempty
   where
     go ss = do
         -- putStrLn "retrieving asks..."
@@ -301,6 +307,8 @@ retrieveAsks q = go mempty
                     then return db
                     else do
                     -- P.print ("ins chan", ask)
+                    modifyMVar_ cnt $ \x -> return $ x + 1
+                    setAskCount doc cnt
                     writeChan q ask
                     return $ Set.insert (askURL ask) db
 
@@ -319,10 +327,13 @@ askMain = runWebGUI $ \webView -> do
     -- setProperty style ("visibility" :: String) (Just ("hidden" :: String)) ("" :: String)
 
     askQ <- newChan
-    forkIO $ retrieveAsks askQ
+    askCnt <- newMVar 0
+    forkIO $ retrieveAsks doc askQ askCnt
 
     forever $ do
         ask <- readChan askQ
+        modifyMVar_ askCnt $ \x -> return $ x - 1
+        setAskCount doc askCnt
         appendAsk doc ask
 
         let go = do
