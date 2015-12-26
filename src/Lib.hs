@@ -60,20 +60,6 @@ httpGet url = do
         Nothing -> P.error $ "http get failed: " ++ url
         Just ss -> return ss
 
-httpGetBS :: String -> IO S.ByteString
-httpGetBS url = do
-    res <- xhrByteString Request
-        { reqMethod = GET
-        , reqURI = pack url
-        , reqLogin = Nothing
-        , reqHeaders = []
-        , reqWithCredentials = False
-        , reqData = NoData
-        }
-    case contents res of
-        Nothing -> P.error $ "http get failed: " ++ url
-        Just ss -> return ss
-
 httpPost :: String -> [(JSString, String)] -> IO String
 httpPost url form = do
     res <- xhrString Request
@@ -172,26 +158,43 @@ parseAsk = do
     u <- manyTill anyChar $ char '"'
     return $ Ask (trim q) (trim d) (trim u)
 
+setStyle :: Element -> String -> String -> IO ()
+setStyle elm name val = do
+    Just style <- getStyle elm
+    setProperty style name (Just val) ""
+
 waitForLogin :: Document -> IO ()
 waitForLogin doc = do
     mvLogin <- newEmptyMVar
 
-    Just userText <- getElementById doc "user"
-    Just passText <- getElementById doc "pass"
+    Just userText  <- getElementById doc "user"
+    Just passText  <- getElementById doc "pass"
+    Just spinner   <- getElementById doc "login-spinner"
+    Just errorText <- getElementById doc "login-error"
 
     Just loginDialog <- getElementById doc "login-dialog"
     Just loginBtn <- getElementById doc "login-btn"
     on loginBtn Element.click $ liftIO $ do
+        setClassName errorText "ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l ms-u-fadeOut100"
+
         Just user <- Input.getValue $ castToHTMLInputElement userText
         Just pass <- Input.getValue $ castToHTMLInputElement passText
-        res <- login user pass
-        case res of
-            Left err -> putStrLn err
-            Right _ -> do
-                -- putStrLn $ "Login success"
-                Just style <- getStyle loginDialog
-                setProperty style "visibility" (Just "hidden") ""
-                putMVar mvLogin ()
+        when (user /= "" && pass /= "") $ do
+            setClassName spinner "ms-Spinner ms-u-fadeIn500"
+            res <- login user pass
+            case res of
+                Left err -> do
+                    setClassName spinner "ms-Spinner"
+                    setInnerText (castToHTMLElement errorText) $ Just err
+                    setClassName errorText "ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l ms-u-fadeIn100"
+                    setStyle errorText "visibility" "visible"
+                    putStrLn err
+                Right _ -> do
+                    setClassName loginDialog "ms-Dialog ms-u-fadeOut200"
+                    putMVar mvLogin ()
+                    threadDelay $ 250 * 1000
+                    setStyle loginDialog "visibility" "hidden"
+                    setClassName loginDialog "ms-Dialog"
 
     takeMVar mvLogin
 
