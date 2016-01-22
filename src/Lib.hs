@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, RecursiveDo #-}
+{-# LANGUAGE QuasiQuotes, RecursiveDo, ScopedTypeVariables #-}
 
 module Lib
     ( askMain
@@ -29,12 +29,15 @@ import GHCJS.DOM.Element as Element
 import GHCJS.DOM.Node
 import GHCJS.DOM.Window
 import GHCJS.DOM.XMLHttpRequest as Http
+import GHCJS.DOM.Event
 import GHCJS.DOM.EventM
 import GHCJS.DOM.HTMLInputElement as Input
 import GHCJS.DOM.CSSStyleDeclaration
 import GHCJS.DOM.HTMLTextAreaElement as TextArea
 import GHCJS.DOM.KeyboardEvent
 import GHCJS.DOM.HTMLElement as HTMLElement
+import GHCJS.DOM.EventTarget
+import GHCJS.DOM.EventTargetClosures
 
 import GHCJS.Foreign
 import GHCJS.Foreign.Callback
@@ -105,7 +108,7 @@ login user pass = do
 
 data Profile = Profile
     { profileUserName :: String
-    , profileAvaterURL :: String
+    , profileAvatarURL :: String
     }
     deriving Show
 
@@ -117,15 +120,11 @@ getProfile = do
         _ -> P.error "cannot get username"
 
     t <- httpGet $ "https://ask.fm/" ++ userName
+    avatarUrl <- case t =~ "data-action=\"ImageOpen\" data-url=\"([^\"]+)\"" of
+        [[_, avatarUrl]] -> return $ "https:" ++ avatarUrl
+        _ -> P.error "cannot get avatar"
 
-    avaterUrl <- case (unwords $ lines t) =~ "<div id=\"profileHeader\">.*data-url=\"([^\"]+)\".*id=\"profilePicture\"" of
-        [[_, avaterUrl]] ->
-            if "//" `isPrefixOf` avaterUrl
-            then return $ "https://" ++ avaterUrl
-            else return avaterUrl
-        _ -> P.error "cannot get avater"
-
-    return $ Profile userName avaterUrl
+    return $ Profile userName avatarUrl
 
 data Ask = Ask
     { askQuestion :: String
@@ -175,7 +174,8 @@ parseAsk :: Parser Ask
 parseAsk = do
     _ <- try $ manyTill anyChar $ try $ string "<h1 class=\"streamItemContent streamItemContent-question\">"
     q <- manyTill anyChar $ try $ string "</h1>"
-    _ <- manyTill anyChar $ try $ string "<span class=\"streamItemsAge\">"
+    _ <- manyTill anyChar $ try $ string "<span class=\"streamItemsAge\""
+    _ <- manyTill anyChar $ try $ string ">"
     d <- manyTill anyChar $ try $ string "</span>"
     _ <- manyTill anyChar $ try $ string "<a "
     _ <- manyTill anyChar $ try $ string "href=\""
@@ -187,38 +187,25 @@ setStyle elm name val = do
     Just style <- getStyle elm
     setProperty style name (Just val) ""
 
+foreign import javascript unsafe "$1.newURL" newUrl :: Event -> IO JSString
+
 waitForLogin :: Document -> IO ()
 waitForLogin doc = do
     mvLogin <- newEmptyMVar
 
-    Just userText  <- getElementById doc "user"
-    Just passText  <- getElementById doc "pass"
-    Just spinner   <- getElementById doc "login-spinner"
-    Just errorText <- getElementById doc "login-error"
-
     Just loginDialog <- getElementById doc "login-dialog"
-    Just loginBtn <- getElementById doc "login-btn"
-    on loginBtn Element.click $ liftIO $ do
-        setClassName errorText "ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l ms-u-fadeOut100"
+    Just webview     <- getElementById doc "login-webview"
 
-        Just user <- Input.getValue $ castToHTMLInputElement userText
-        Just pass <- Input.getValue $ castToHTMLInputElement passText
-        when (user /= "" && pass /= "") $ do
-            setClassName spinner "ms-Spinner ms-u-fadeIn500"
-            res <- login user pass
-            case res of
-                Left err -> do
-                    setClassName spinner "ms-Spinner"
-                    setInnerText (castToHTMLElement errorText) $ Just err
-                    setClassName errorText "ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l ms-u-fadeIn100"
-                    setStyle errorText "visibility" "visible"
-                    putStrLn err
-                Right _ -> do
-                    setClassName loginDialog "ms-Dialog ms-u-fadeOut200"
-                    putMVar mvLogin ()
-                    threadDelay $ 250 * 1000
-                    setStyle loginDialog "visibility" "hidden"
-                    setClassName loginDialog "ms-Dialog"
+    f <- eventListenerNew $ \(e :: Event) -> do
+        url <- newUrl e
+        when (url == pack "https://ask.fm/account/wall") $ do
+            setClassName loginDialog "ms-Dialog ms-u-fadeOut200"
+            putMVar mvLogin ()
+            threadDelay $ 250 * 1000
+            setStyle loginDialog "visibility" "hidden"
+            setClassName loginDialog "ms-Dialog"
+
+    addEventListener webview "did-get-redirect-request" (Just f) False
 
     takeMVar mvLogin
 
@@ -265,7 +252,7 @@ appendAns doc ans prof = do
             <div align="right" class="ms-font-m">#{profileUserName prof}</div>
           </td>
           <td rowspan="2" width="64px" style="vertical-align:top;">
-            <img src="#{profileAvaterURL prof}" width="100%">
+            <img src="#{profileAvatarURL prof}" width="100%">
           </td>
         </tr>
         <tr>
@@ -367,7 +354,6 @@ askMain = runWebGUI $ \webView -> do
                 [ "facebook" | fbChecked ] ++
                 [ "twitter"  | twChecked ] ++
                 [ "vk"       | vkChecked ]
-
 
         liftIO $ setStyle settingDialog "visibility" "hidden"
 

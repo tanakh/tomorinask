@@ -52,7 +52,7 @@
 
     <div class="ms-Dialog" id="login-dialog">
       <div class="ms-Overlay"></div>
-      <div class="ms-Dialog-main">
+      <div class="ms-Dialog-main" style="max-width:400px;width:500px;height:500px">
         <button class="ms-Dialog-button ms-Dialog-button--close">
           <i class="ms-Icon ms-Icon--x"></i>
         </button>
@@ -62,29 +62,8 @@
           </p>
         </div>
         <div class="ms-Dialog-inner">
-          <div class="ms-Dialog-content">
-
-            <div class="ms-Spinner" style="opacity:0;position:absolute;top:0;left:0;right:0;bottom:0;margin:auto;" id="login-spinner"></div>
-
-            <img src="tomorinao.png" width="100%">
-            <p class="ms-Dialog-subText ms-bgColor-orange ms-fontColor-neutralLighter ms-font-l" style="position:relative;visibility:hidden;" id="login-error">
-            </p>
-
-            <div class="ms-TextField ms-TextField--underlined">
-              <label class="ms-Label">User:</label>
-              <input class="ms-TextField-field" id="user" type="text">
-            </div>
-            <div class="ms-TextField ms-TextField--underlined">
-              <label class="ms-Label">Pass:</label>
-              <input class="ms-TextField-field" id="pass" type="password">
-            </div>
-          </div>
-          <div class="ms-Dialog-actions">
-            <div class="ms-Dialog-actionsRight">
-              <button class="ms-Dialog-action ms-Button ms-Button--primary" id="login-btn">
-                <span class="ms-Button-label">Login</span>
-              </button>
-            </div>
+          <div class="ms-Dialog-content" style="height:398px">
+            <webview src="https://ask.fm/login" id="login-webview"></webview>
           </div>
         </div>
       </div>
